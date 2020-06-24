@@ -49,6 +49,10 @@ Roles
   - ELB : マシンの負荷分散をする
   - ASG : サービスのオートスケール
 
+#### EC2のインスタンス作成
+
+インスタンス一覧で特定のインスタンスを指定して右クリック→Launch More Like This をクリックすると、そのインスタンスの起動時と同じ設定で新しいインスタンスを作れる
+
 #### tenancy
 
   default: 通常のインスタンス
@@ -61,6 +65,7 @@ https://dev.classmethod.jp/articles/ec2-tenancy/ が参考になる
 
 EC2の初回起動時の処理(インストール・設定など) をスクリプトで定義できる。これにより、初回起動でのセットアップを自動化できる
 インスタンス作成時に指定可能
+STOP状態のEC2 User DataはコンソールのActionから変更可能だが、編集しても起動時には再実行されない。
 
 #### IP
 
@@ -73,8 +78,67 @@ EC2の初回起動時の処理(インストール・設定など) をスクリ�
 
 インスタンスやELBなどEC2のサービスにアタッチするinbound/outboundのルール
 ip, CIDR, 他のセキュリティグループを元に通信の許可を定義できる
+他のセキュリティグループをSourcesに設定したい場合は、Sourcesに `sg-` と打ち込むと候補が出てくるので便利
 TCP, HTTPなどのプロトコルとポートを指定することができる
 
 セキュリティグループは任意の数のインスタンスにアタッチでき、インスタンスは任意の数のセキュリティグループをもつことができる
 
+#### ENI Elastic Network Interface
 
+VPCで利用する仮想のネットワークカード
+
+次のような特徴がある
+
+- primary private IP v4
+- 一つ以上のsecondary private IP v4 アドレス
+- 一つのprivate IP v4 につき一つのElastic IP が付与できる
+- 一つのpublic IP V4
+- 一つ以上のセキュリティグループをアタッチできる
+- MACアドレスを割り当てられる
+- インスタンスタイプにより割り当てられる枚数が変わるので注意
+- 特定のAZにbound される
+- あるインスタンスからデタッチし、他のインスタンスに付け替えることができる
+
+NTT東日本の解説コラム: https://business.ntt-east.co.jp/content/cloudsolution/column-14.html
+
+
+### Elastic Load Balancer
+
+トラフィックを複数のEC2インスタンスやLambdaなどに振り分けるためのサービス。
+
+ロードバランサは以下のような目的で使う
+
+
+- ロードを複数のインスタンスに分散させる
+- 単一のアクセス点(DNS)をアプリケーションに設定する
+- 下流のインスタンスの問題をシームレスに扱う
+- 各インスタンスのヘルスチェックを行う
+- webサイトのSSL終端を行う
+- スティッキーセッションCookieを設定する(後述)
+- 複数のAZにまたがってロードバランシングする
+- publicなトラフィックをprivateなネットワークに流す
+
+ELBはマネージドなサービス。
+
+#### Health Checks
+
+port / route を定義し、ELBからそのポイントにリクエストを送ることでレスポンスから正常性を判断する
+ELBがインスタンスがhealthy であるかを判断し、ロードバランシングの対象にするかどうかを決めるための仕組み
+
+
+#### Classic Load Balancer
+
+一番古いロードバランサー。(L7)HTTP, HTTPS, (L4)TCP のロードバランシングができる。
+現在は後続のApplication Load Balancer / Network Load Balancer が推奨
+
+Health Checks は TCPベースまたはHTTPベースで定義する
+固定のホスト名が付与される。xxx.region.elb.amazonaws.com 例) testelb.ap-northeast-1.elb.amazonaws.com
+
+
+#### Application Load Balancer
+
+L7向けロードバランサー。HTTP, HTTPS, WebSocketをサポートする。
+
+#### Network Load Balancer
+
+L4向けロードバランサー。TCP, TLS, UDP をサポートする
