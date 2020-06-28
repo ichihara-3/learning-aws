@@ -135,10 +135,61 @@ Health Checks は TCPベースまたはHTTPベースで定義する
 固定のホスト名が付与される。xxx.region.elb.amazonaws.com 例) testelb.ap-northeast-1.elb.amazonaws.com
 
 
-#### Application Load Balancer
+#### Application Load Balancer (v2)
 
-L7向けロードバランサー。HTTP, HTTPS, WebSocketをサポートする。
+L7向けロードバランサー。HTTP, HTTPS, WebSocketをサポートする。マイクロサービスやコンテナベースのアプリケーションに適している(例: Docker + Amazon ECS)
 
-#### Network Load Balancer
+##### ALBの特徴
+
+- 複数のマシンにまたがったHTTPアプリケーションのロードバランシングを行うことができる。target group
+- コンテナのような、同一マシン上の複数アプリケーションにロードバランシングすることもできる
+- HTTP/2, WebSocketをサポートする。
+HTTP -> HTTPSのようなリダイレクトを設定できる
+- ECSのダイナミックポートにリダイレクトするためのポートマッピング機能がある
+- ルーティングの方法
+
+  - URL pathベースのルーティング (/users , /posts)
+  - hostname ベースのルーティング(one.example.com , other.example.com)
+  - クエリストリング、ヘッダベースのルーティング (example.com/users?id=123&order=false)
+- 一つのALBで複数のアプリケーションのロードバランシングができる。CLBではアプリケーションごとに一つ設定する必要があった
+
+##### Target Groups ターゲットグループ
+
+ALBのルーティング対象のグループのこと。ルーティング対象やプロトコル、ヘルスチェックなどを定義する。複数作成可能。
+
+ターゲットグループの対象になるものはイアk
+
+- EC2インスタンス(Auto Scaling Group で管理可能) - HTTP
+- ECSタスク - HTTP
+- AWS Lambda - HTTP -> JSON Eventに変換
+- IP アドレス- (private IP)
+
+ALBは複数の ターゲットグループを持つことができる。
+
+##### その他のポイント
+
+- ホスト名は固定(xxx.region.elb.amazonaws.com)
+- アプリケーションサーバからはクライアントIPは見えない
+  - クライアントIPは X-Forwarded-For ヘッダに設定される
+  - クライアントのポートは X-Forwarded-Port
+  - クライアントのプロトコルは X-Forwarded-Proto
+- ターゲットグループの対象インスタンスを設定するためには、インスタンスは起動している必要がある
+- ターゲットグループにインスタンスを追加するにはAdd to registered をクリックする必要がある。チェックボックスをつけてSaveするだけでは追加されなかった
+
+
+
+#### Network Load Balancer (v2)
 
 L4向けロードバランサー。TCP, TLS, UDP をサポートする
+
+数百万(millions)オーダーのリクエストを毎秒捌くことができる。
+レイテンシは100ms未満程度(ALBは400ms程度)
+NLBはAZごとに静的IPをもつ。また、ElasticIPを設定することができる。
+
+
+##### NLBのユースケース
+
+- 高パフォーマンスが要求される
+- TCP / UDPレベルでのトラフィックを扱う必要がある
+
+
