@@ -249,3 +249,29 @@ AWSのサービス側でサポートしているのは、ALB, NLB, Cloudfront
 
 CLBでは動作しないので注意が必要。
 
+
+#### Connection Draining
+
+インスタンスがLBの対象から除外されたりunhealthyになったときに、新規のリクエストは受け付けなくなるが、既に受け付けているリクエストは処理させたい。このときの待ち時間をConnection Drainingと呼ぶ。
+デフォルトは300秒で、1秒から3600秒(1時間) までの範囲で設定が可能。
+除外対象のインスタンスはConnection Draining の時間がすぎた後に終了処理が行われる。
+
+サービス上では呼び名が違うので注意
+CLB: Connection Draining
+Target Group(ALB/NLB): Deregistration Delay
+
+
+#### Auto Scaling Group (ASG)
+
+EC2インスタンスのスケールイン(台数増)・スケールアウト(台数減)を自動で行うための設定。
+初期のインスタンス数・最小値・最大値を設定することができ、CloudWatchなどのメトリクスを指標として、自動でスケールイン・スケールアウトをさせることができる。
+
+ASGには以下のような設定項目がある
+
+- 起動設定
+  - AMI + Instance Type
+  - EC2 User Date
+  - EBSボリューム設定
+  - セキュリティグループ
+  - SSHキーペア
+
